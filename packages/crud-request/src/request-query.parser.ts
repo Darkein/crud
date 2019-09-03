@@ -1,11 +1,11 @@
 import {
   hasLength,
   hasValue,
-  isString,
   isArrayFull,
   isDate,
   isDateString,
   isObject,
+  isString,
   isStringFull,
   objKeys,
 } from '@nestjsx/util';
@@ -202,18 +202,18 @@ export class RequestQueryParser implements ParsedRequestParams {
       objectData = JSON.parse(data);
       // tslint:disable-next-line
     } catch (e) {}
-    if (objectData !== undefined) {
-      if (Array.isArray(objectData)) {
-        if (objectData.length === 1) {
-          return this.conditionParser(cond, JSON.stringify(objectData[0]));
-        }
 
-        return objectData.map((o) =>
-          this.conditionParser(cond, JSON.stringify(o)),
-        ) as QueryFilter;
-      } else {
-        return this.conditionParser(cond, objectData);
-      }
+    const filters: QueryFilter =
+      isArrayFull(objectData) || isStringFull(objectData)
+        ? this.parseCondition(cond, objectData)
+        : this.parseCondition(cond, data);
+
+    return Array.isArray(filters) && filters.length === 1 ? filters[0] : filters;
+  }
+
+  private parseCondition(cond: 'filter' | 'or', data: string | any[]) {
+    if (Array.isArray(data)) {
+      return data.map((o) => this.parseCondition(cond, o));
     }
 
     const isArrayValue = ['in', 'notin', 'between'];
